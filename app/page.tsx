@@ -57,12 +57,12 @@ const T = {
     divider:        "bg-white/10",
     muted:          "text-white/30",
     inputBorder:    "border-white/20 focus:border-white/60",
-    cardBorder:     "border-white/10",
-    cardLine:       "border-white/10",
-    miniCardBorder: "border-white/15",
-    miniCardLine:   "border-white/10",
+    cardBorder:     "border-transparent",
+    cardLine:       "border-transparent",
+    miniCardBorder: "border-transparent",
+    miniCardLine:   "border-transparent",
     labelMuted:     "text-white/40",
-    zoneLabel:      "text-white/25 hover:text-white/70",
+    zoneLabel:      "text-white/0 hover:text-white/80 transition-colors duration-150",
     pmHint:         "text-white/30",
     btnBase:        "bg-white/10 hover:bg-white/20 active:bg-white/30 border-white/20",
     iconBtn:        "text-white/40 hover:text-white/80 hover:bg-white/10",
@@ -74,12 +74,12 @@ const T = {
     divider:        "bg-gray-300",
     muted:          "text-gray-400",
     inputBorder:    "border-gray-300 focus:border-gray-500",
-    cardBorder:     "border-gray-300",
-    cardLine:       "border-gray-200",
-    miniCardBorder: "border-gray-300",
-    miniCardLine:   "border-gray-200",
+    cardBorder:     "border-transparent",
+    cardLine:       "border-transparent",
+    miniCardBorder: "border-transparent",
+    miniCardLine:   "border-transparent",
     labelMuted:     "text-gray-400",
-    zoneLabel:      "text-gray-300 hover:text-gray-600",
+    zoneLabel:      "text-gray-900/0 hover:text-gray-700 transition-colors duration-150",
     pmHint:         "text-gray-400",
     btnBase:        "bg-gray-200 hover:bg-gray-300 active:bg-gray-400 border-gray-300",
     iconBtn:        "text-gray-400 hover:text-gray-700 hover:bg-gray-200",
@@ -89,7 +89,7 @@ const T = {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-interface Athlete { name: string; academy: string; score: number; adv: number; pen: number; }
+interface Athlete { name: string; academy: string; score: number; adv: number; pen: number; lastDelta: number | null; }
 interface MatchState {
   athleteA: Athlete; athleteB: Athlete;
   timer: number; timerRunning: boolean;
@@ -98,8 +98,8 @@ interface MatchState {
 
 const DEFAULT_DURATION = 5 * 60;
 const DEFAULT_STATE: MatchState = {
-  athleteA: { name: "Athlete A", academy: "Academy", score: 0, adv: 0, pen: 0 },
-  athleteB: { name: "Athlete B", academy: "Academy", score: 0, adv: 0, pen: 0 },
+  athleteA: { name: "Athlete A", academy: "Academy", score: 0, adv: 0, pen: 0, lastDelta: null },
+  athleteB: { name: "Athlete B", academy: "Academy", score: 0, adv: 0, pen: 0, lastDelta: null },
   timer: DEFAULT_DURATION, timerRunning: false,
   category: "Adult Black Belt Light", round: "Semifinal", mat: "Mat 1",
 };
@@ -149,26 +149,36 @@ function TimerDisplay({ timer, timerRunning, timerColor, onChangeTimer, t }: {
   );
 }
 
-const SCORE_ZONES = [
+const TOP_ZONES = [
   { pts: 4, label: "+4" }, { pts: 3, label: "+3" }, { pts: 2, label: "+2" },
-  { pts: -4, label: "−4" }, { pts: -3, label: "−3" }, { pts: -2, label: "−2" },
 ];
 
-function ScoreCard({ score, onScore, pc, t }: {
-  score: number; onScore: (pts: number) => void; pc: PaletteColors; t: typeof T.dark;
+function ScoreCard({ score, onScore, onUndo, canUndo, pc, t }: {
+  score: number; onScore: (pts: number) => void; onUndo: () => void; canUndo: boolean; pc: PaletteColors; t: typeof T.dark;
 }) {
   return (
-    <div className={`relative w-full flex-1 grid grid-cols-3 grid-rows-2 rounded-2xl overflow-hidden border ${t.cardBorder} ${pc.panelBg} min-h-0`}>
-      {SCORE_ZONES.map(({ pts, label }) => (
-        <button key={pts} onClick={() => onScore(pts)}
-          className={`relative flex justify-center ${t.zoneLabel} ${pc.scoreHover} transition-all text-base font-bold select-none ${pts > 0 ? "items-start pt-3" : "items-end pb-3"}`}>
-          {label}
+    <div className={`relative w-full flex-1 flex flex-col rounded-2xl overflow-hidden border ${t.cardBorder} ${pc.panelBg} min-h-0`}>
+      {/* Top row — +4 +3 +2 */}
+      <div className="flex flex-1">
+        {TOP_ZONES.map(({ pts, label }) => (
+          <button key={pts} onClick={() => onScore(pts)}
+            className={`flex-1 flex justify-center items-center ${t.zoneLabel} ${pc.scoreHover} transition-all text-4xl font-bold select-none`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* Bottom row — +1 | Undo */}
+      <div className="flex flex-1">
+        <button onClick={() => onScore(1)}
+          className={`flex-1 flex justify-center items-center ${t.zoneLabel} ${pc.scoreHover} transition-all text-4xl font-bold select-none`}>
+          +1
         </button>
-      ))}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className={`absolute top-0 bottom-0 left-1/3 border-l ${t.cardLine}`} />
-        <div className={`absolute top-0 bottom-0 left-2/3 border-l ${t.cardLine}`} />
-        <div className={`absolute left-0 right-0 top-1/2 border-t  ${t.cardLine}`} />
+        <button onClick={onUndo} disabled={!canUndo}
+          className={`flex-1 flex justify-center items-center ${t.zoneLabel} ${pc.scoreHover} transition-all select-none disabled:opacity-25`}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+        </button>
       </div>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <span className="text-[9rem] font-black tabular-nums leading-none drop-shadow-lg">{score}</span>
@@ -280,7 +290,18 @@ export default function Scoreboard() {
   }, [match.timerRunning]);
 
   function addScore(side: "athleteA" | "athleteB", pts: number) {
-    setMatch((p) => ({ ...p, [side]: { ...p[side], score: Math.max(0, p[side].score + pts) } }));
+    setMatch((p) => {
+      const newScore = Math.max(0, p[side].score + pts);
+      const applied = newScore - p[side].score;
+      return { ...p, [side]: { ...p[side], score: newScore, lastDelta: applied !== 0 ? applied : p[side].lastDelta } };
+    });
+  }
+  function undoScore(side: "athleteA" | "athleteB") {
+    setMatch((p) => {
+      const delta = p[side].lastDelta;
+      if (delta === null) return p;
+      return { ...p, [side]: { ...p[side], score: Math.max(0, p[side].score - delta), lastDelta: null } };
+    });
   }
   function adjustAdv(side: "athleteA" | "athleteB", delta: number) {
     setMatch((p) => ({ ...p, [side]: { ...p[side], adv: Math.max(0, p[side].adv + delta) } }));
@@ -303,7 +324,7 @@ export default function Scoreboard() {
   }
 
   const timerColor = match.timer <= 30 ? "text-red-500" : match.timer <= 60 ? "text-yellow-500" : "";
-  const corrBtn = `w-10 h-7 rounded-md border text-xs font-bold transition-colors ${t.btnBase}`;
+
 
   return (
     <div className={`h-screen flex flex-col select-none overflow-hidden transition-colors duration-300 ${t.page}`}>
@@ -361,12 +382,8 @@ export default function Scoreboard() {
             <EditableText value={match.athleteA.academy} onChange={(v) => updateAthlete("athleteA", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
-          <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} pc={pcA} t={t} />
+          <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.lastDelta !== null} pc={pcA} t={t} />
           <div className="flex items-center justify-center gap-20 shrink-0 py-1">
-            <div className="flex flex-col gap-1">
-              <button onClick={() => addScore("athleteA",  1)} className={corrBtn}>+1</button>
-              <button onClick={() => addScore("athleteA", -1)} className={corrBtn}>−1</button>
-            </div>
             <MiniCard label="ADV" value={match.athleteA.adv} pc={pcA} t={t}
               onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
             <MiniCard label="PEN" value={match.athleteA.pen} pc={pcA} t={t}
@@ -384,16 +401,12 @@ export default function Scoreboard() {
             <EditableText value={match.athleteB.academy} onChange={(v) => updateAthlete("athleteB", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
-          <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} pc={pcB} t={t} />
+          <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.lastDelta !== null} pc={pcB} t={t} />
           <div className="flex items-center justify-center gap-20 shrink-0 py-1">
             <MiniCard label="ADV" value={match.athleteB.adv} pc={pcB} t={t}
               onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
             <MiniCard label="PEN" value={match.athleteB.pen} pc={pcB} t={t}
               onPlus={() => adjustPen("athleteB", 1)} onMinus={() => adjustPen("athleteB", -1)} />
-            <div className="flex flex-col gap-1">
-              <button onClick={() => addScore("athleteB",  1)} className={corrBtn}>+1</button>
-              <button onClick={() => addScore("athleteB", -1)} className={corrBtn}>−1</button>
-            </div>
           </div>
         </div>
       </div>
