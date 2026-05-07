@@ -69,21 +69,21 @@ const T = {
     timerInput:     "border-white/50 text-white",
   },
   light: {
-    page:           "bg-gray-100 text-gray-900",
-    border:         "border-gray-300",
-    divider:        "bg-gray-300",
-    muted:          "text-gray-400",
-    inputBorder:    "border-gray-300 focus:border-gray-500",
+    page:           "bg-white text-gray-900",
+    border:         "border-zinc-200",
+    divider:        "bg-zinc-200",
+    muted:          "text-zinc-500",
+    inputBorder:    "border-zinc-300 focus:border-zinc-600",
     cardBorder:     "border-transparent",
     cardLine:       "border-transparent",
     miniCardBorder: "border-transparent",
     miniCardLine:   "border-transparent",
-    labelMuted:     "text-gray-400",
-    zoneLabel:      "text-gray-900/0 hover:text-gray-700 transition-colors duration-150",
-    pmHint:         "text-gray-400",
-    btnBase:        "bg-gray-200 hover:bg-gray-300 active:bg-gray-400 border-gray-300",
-    iconBtn:        "text-gray-400 hover:text-gray-700 hover:bg-gray-200",
-    timerInput:     "border-gray-400 text-gray-900",
+    labelMuted:     "text-zinc-500",
+    zoneLabel:      "text-gray-900/0 hover:text-zinc-800 transition-colors duration-150",
+    pmHint:         "text-zinc-400",
+    btnBase:        "bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 border-zinc-200",
+    iconBtn:        "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    timerInput:     "border-zinc-400 text-gray-900",
   },
 } satisfies Record<Theme, Record<string, string>>;
 
@@ -187,17 +187,18 @@ function ScoreCard({ score, onScore, onUndo, canUndo, pc, t }: {
   );
 }
 
-function MiniCard({ label, value, onPlus, onMinus, pc, t }: {
-  label: string; value: number; onPlus: () => void; onMinus: () => void; pc: PaletteColors; t: typeof T.dark;
+function MiniCard({ label, value, onPlus, onMinus, t, cardBg, hoverCls, valueColor }: {
+  label: string; value: number; onPlus: () => void; onMinus: () => void; t: typeof T.dark;
+  cardBg: string; hoverCls: string; valueColor?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span className={`text-xs uppercase tracking-widest ${t.labelMuted}`}>{label}</span>
-      <div className={`relative grid grid-cols-2 rounded-xl overflow-hidden border ${t.miniCardBorder} ${pc.panelBg} w-72 h-52`}>
-        <button onClick={onPlus}  className={`${pc.miniHover} transition-colors`} />
-        <button onClick={onMinus} className={`${pc.miniHover} transition-colors border-l ${t.miniCardLine}`} />
+      <span className={`text-2xl font-bold uppercase tracking-widest ${t.labelMuted}`}>{label}</span>
+      <div className={`relative grid grid-cols-2 rounded-xl overflow-hidden border ${t.miniCardBorder} ${cardBg} w-72 h-52`}>
+        <button onClick={onPlus}  className={`${hoverCls} transition-colors`} />
+        <button onClick={onMinus} className={`${hoverCls} transition-colors border-l ${t.miniCardLine}`} />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-7xl font-black tabular-nums">{value}</span>
+          <span className={`text-8xl font-black tabular-nums ${valueColor ?? ""}`}>{value}</span>
         </div>
         <div className={`absolute inset-0 flex items-center justify-between px-5 pointer-events-none ${t.pmHint}`}>
           <span className="text-xl font-bold">+</span>
@@ -324,6 +325,10 @@ export default function Scoreboard() {
   }
 
   const timerColor = match.timer <= 30 ? "text-red-500" : match.timer <= 60 ? "text-yellow-500" : "";
+  const advBg    = theme === "light" ? "bg-slate-300" : "bg-slate-600/50";
+  const advHover = "hover:bg-slate-400 active:bg-slate-500";
+  const penBg    = theme === "light" ? "bg-slate-300" : "bg-slate-600/50";
+  const penHover = "hover:bg-slate-400 active:bg-slate-500";
 
 
   return (
@@ -384,9 +389,9 @@ export default function Scoreboard() {
           </div>
           <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.lastDelta !== null} pc={pcA} t={t} />
           <div className="flex items-center justify-center gap-20 shrink-0 py-1">
-            <MiniCard label="ADV" value={match.athleteA.adv} pc={pcA} t={t}
+            <MiniCard label="ADV" value={match.athleteA.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
-            <MiniCard label="PEN" value={match.athleteA.pen} pc={pcA} t={t}
+            <MiniCard label="PEN" value={match.athleteA.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
               onPlus={() => adjustPen("athleteA", 1)} onMinus={() => adjustPen("athleteA", -1)} />
           </div>
         </div>
@@ -403,9 +408,9 @@ export default function Scoreboard() {
           </div>
           <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.lastDelta !== null} pc={pcB} t={t} />
           <div className="flex items-center justify-center gap-20 shrink-0 py-1">
-            <MiniCard label="ADV" value={match.athleteB.adv} pc={pcB} t={t}
+            <MiniCard label="ADV" value={match.athleteB.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
-            <MiniCard label="PEN" value={match.athleteB.pen} pc={pcB} t={t}
+            <MiniCard label="PEN" value={match.athleteB.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
               onPlus={() => adjustPen("athleteB", 1)} onMinus={() => adjustPen("athleteB", -1)} />
           </div>
         </div>
