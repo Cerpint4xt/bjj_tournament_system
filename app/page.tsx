@@ -5,6 +5,11 @@ import { useEffect, useRef, useState } from "react";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
+const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+function withBasePath(path: string) {
+  return `${PUBLIC_BASE_PATH}${path}`;
+}
 
 function getStageScale() {
   if (typeof window === "undefined") return 1;
@@ -291,7 +296,7 @@ function ThemeButton({ theme, onToggle, t }: { theme: Theme; onToggle: () => voi
 }
 
 function BrandLogo({ theme }: { theme: Theme }) {
-  const src = theme === "dark" ? "/img/Stacked_Red.png" : "/img/Stacked_Black.png";
+  const src = theme === "dark" ? withBasePath("/img/Stacked_Red.png") : withBasePath("/img/Stacked_Black.png");
   const alt = "BJJ tournament scoreboard";
 
   return (
@@ -312,7 +317,7 @@ function CenterShield({ theme }: { theme: Theme }) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-[50.5%] -translate-y-[10%]">
       <Image
-        src="/img/Red_Shield.png"
+        src={withBasePath("/img/Red_Shield.png")}
         alt="Tournament shield"
         width={320}
         height={320}
