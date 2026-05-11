@@ -14,10 +14,10 @@ This guide covers how to run the scoreboard locally and how to deploy it to GitH
 
 ## Running Locally
 
-### 1. Get onto the scoreboard branch
+### 1. Open the scoreboard workspace
 
 ```bash
-git checkout stage1/scoreboard
+git checkout main
 ```
 
 ### 2. Install dependencies
@@ -53,28 +53,21 @@ The page hot-reloads on every file save — no restart needed during development
 
 The scoreboard is 100% client-side — no server, no database, no API calls. This makes it a perfect fit for GitHub Pages (free static hosting).
 
-### Step 1 — Configure Next.js for static export
+### Step 1 — Static export is already configured
 
-Edit `next.config.ts` and replace its contents with:
+`next.config.ts` already enables static export and GitHub Pages support:
 
-```ts
-import type { NextConfig } from "next";
+- `output: "export"`
+- `images.unoptimized: true`
+- `trailingSlash: true`
+- automatic `basePath` detection from `GITHUB_REPOSITORY` during GitHub Actions builds
 
-const nextConfig: NextConfig = {
-  output: "export",
-  basePath: "/YOUR-REPO-NAME",   // ← replace with your actual GitHub repo name
-  images: { unoptimized: true }, // required for static export
-};
-
-export default nextConfig;
-```
-
-> Example: if your repo is `github.com/yourname/bjj-scoreboard`, set `basePath: "/bjj-scoreboard"`
+That means you do **not** need to hardcode your repo name in the config.
 
 ### Step 2 — Build the static site
 
 ```bash
-npm run build
+npm run build:pages
 ```
 
 This generates an `out/` folder containing the complete static site.
@@ -83,7 +76,18 @@ This generates an `out/` folder containing the complete static site.
 
 **Option A — Automatic (GitHub Actions) — recommended**
 
-Create the file `.github/workflows/deploy.yml` with this content:
+This repository already includes `.github/workflows/deploy.yml`.
+
+It deploys automatically when you push to `main`, and you can also run it manually from the Actions tab.
+
+The workflow:
+
+- installs dependencies with `npm ci`
+- runs `npm run build`
+- uploads the `out/` directory
+- deploys it to GitHub Pages
+
+Reference workflow:
 
 ```yaml
 name: Deploy Scoreboard to GitHub Pages
@@ -91,7 +95,8 @@ name: Deploy Scoreboard to GitHub Pages
 on:
   push:
     branches:
-      - stage1/scoreboard
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -118,7 +123,7 @@ jobs:
       - name: Build static export
         run: npm run build
 
-      - uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -128,7 +133,7 @@ jobs:
         id: deployment
 ```
 
-Every time you push to `stage1/scoreboard`, GitHub automatically builds and deploys.
+Every time you push to `main`, GitHub automatically builds and deploys.
 
 **Option B — Manual (one-time or occasional)**
 
@@ -136,8 +141,10 @@ Every time you push to `stage1/scoreboard`, GitHub automatically builds and depl
 # Install the gh-pages tool once
 npm install -g gh-pages
 
-# Build and deploy
-npm run build
+# Build the static export
+npm run build:pages
+
+# Deploy the exported site
 gh-pages -d out
 ```
 
@@ -162,7 +169,7 @@ https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPO-NAME/
 - **localStorage is per-browser** — data entered on one device does not sync to another. Each device/browser starts with a fresh scoreboard.
 - **Fullscreen mode** works in all modern browsers. On iOS Safari, use "Add to Home Screen" for the best fullscreen experience.
 - **Dark/light mode** and **palette selection** are also saved in localStorage and persist between sessions.
-- This branch (`stage1/scoreboard`) is frozen — it will not receive new feature changes. It exists solely as the clean, standalone scoreboard.
+- The production URL uses your repository name automatically during GitHub Actions builds.
 
 ---
 

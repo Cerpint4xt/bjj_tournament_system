@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pages": "cross-env GITHUB_ACTIONS=true next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -18,6 +19,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "^15.3.2",
     "postcss": "^8",
