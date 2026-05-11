@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 // ─── Palettes ─────────────────────────────────────────────────────────────────
@@ -280,6 +281,38 @@ function ThemeButton({ theme, onToggle, t }: { theme: Theme; onToggle: () => voi
   );
 }
 
+function BrandLogo({ theme }: { theme: Theme }) {
+  const src = theme === "dark" ? "/img/Linear_White.png" : "/img/Stacked_Black.png";
+  const alt = "BJJ tournament scoreboard";
+
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 md:left-4 md:translate-x-0">
+      <Image
+        src={src}
+        alt={alt}
+        width={152}
+        height={48}
+        priority
+        className="h-8 w-auto opacity-90 md:h-10"
+      />
+    </div>
+  );
+}
+
+function CenterShield({ theme }: { theme: Theme }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <Image
+        src="/img/Red_Shield.png"
+        alt="Tournament shield"
+        width={220}
+        height={220}
+        className={`h-24 w-auto opacity-20 md:h-32 ${theme === "light" ? "opacity-15" : "opacity-20"}`}
+      />
+    </div>
+  );
+}
+
 // Palette picker — 5 swatch buttons on the left showing A|B split circle
 function PalettePicker({ selected, onSelect, t }: {
   selected: number; onSelect: (i: number) => void; t: typeof T.dark;
@@ -387,6 +420,8 @@ export default function Scoreboard() {
       {/* Top bar */}
       <div className={`scoreboard-topbar relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
 
+        <BrandLogo theme={theme} />
+
         {/* Palette picker — far left */}
         <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
 
@@ -427,7 +462,9 @@ export default function Scoreboard() {
       </div>
 
       {/* Athletes */}
-      <div className="scoreboard-athletes flex flex-1 gap-3 p-3 min-h-0">
+      <div className="scoreboard-athletes relative flex flex-1 gap-3 p-3 min-h-0">
+
+        <CenterShield theme={theme} />
 
         {/* Athlete A */}
         <div className="flex-1 flex flex-col gap-2 min-h-0">
