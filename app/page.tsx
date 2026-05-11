@@ -364,7 +364,7 @@ export default function Scoreboard() {
           </button>
         </div>
 
-        <div className="scoreboard-meta flex flex-wrap items-center justify-center gap-2 px-4">
+        <div className="scoreboard-meta flex items-center justify-center gap-2 px-4">
           <EditableText value={match.category} onChange={(v) => setMatch((p) => ({ ...p, category: v }))}
             className={`text-[10px] tracking-widest uppercase w-44 ${t.muted}`} placeholder="Category" t={t} />
           <span className={`text-xs ${t.muted}`}>·</span>
