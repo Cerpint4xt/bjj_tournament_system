@@ -3,6 +3,15 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+const STAGE_WIDTH = 1600;
+const STAGE_HEIGHT = 900;
+
+function getStageScale() {
+  if (typeof window === "undefined") return 1;
+
+  return Math.min(window.innerWidth / STAGE_WIDTH, window.innerHeight / STAGE_HEIGHT);
+}
+
 // ─── Palettes ─────────────────────────────────────────────────────────────────
 
 interface PaletteColors {
@@ -307,7 +316,7 @@ function CenterShield({ theme }: { theme: Theme }) {
         alt="Tournament shield"
         width={320}
         height={320}
-        className={`h-[8.75rem] w-auto md:h-[12.5rem] ${theme === "light" ? "opacity-18" : "opacity-22"}`}
+        className={`scoreboard-shield h-auto w-[clamp(10rem,18vmin,14rem)] ${theme === "light" ? "opacity-18" : "opacity-22"}`}
       />
     </div>
   );
@@ -338,6 +347,7 @@ export default function Scoreboard() {
   const [match, setMatch]       = useState<MatchState>(DEFAULT_STATE);
   const [theme, setTheme]       = useState<Theme>("dark");
   const [paletteIdx, setPaletteIdx] = useState(0);
+  const [stageScale, setStageScale] = useState(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const t  = T[theme];
@@ -350,6 +360,16 @@ export default function Scoreboard() {
 
   useEffect(() => { setMatch(loadState()); }, []);
   useEffect(() => { saveState(match); }, [match]);
+
+  useEffect(() => {
+    function handleResize() {
+      setStageScale(getStageScale());
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (match.timerRunning) {
@@ -415,95 +435,112 @@ export default function Scoreboard() {
 
 
   return (
-    <div className={`scoreboard-shell h-screen flex flex-col select-none overflow-hidden transition-colors duration-300 ${t.page}`}>
+    <div className={`scoreboard-frame overflow-hidden transition-colors duration-300 ${t.page}`}>
+      <div
+        className="scoreboard-stage-shell"
+        style={{
+          width: `${STAGE_WIDTH * stageScale}px`,
+          height: `${STAGE_HEIGHT * stageScale}px`,
+        }}
+      >
+        <div
+          className={`scoreboard-shell scoreboard-stage flex flex-col select-none overflow-hidden ${t.page}`}
+          style={{
+            width: `${STAGE_WIDTH}px`,
+            height: `${STAGE_HEIGHT}px`,
+            transform: `scale(${stageScale})`,
+          }}
+        >
 
-      {/* Top bar */}
-      <div className={`scoreboard-topbar relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
+        {/* Top bar */}
+        <div className={`scoreboard-topbar relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
 
-        <div className="absolute left-3 top-3 flex max-w-[40vw] flex-col items-start gap-2 md:max-w-none">
-          <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
-          <BrandLogo theme={theme} />
-        </div>
-
-        {/* Theme + Fullscreen — far right */}
-        <div className="absolute right-3 top-3 flex gap-1">
-          <ThemeButton theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} t={t} />
-          <FullscreenButton t={t} />
-        </div>
-
-        <div className="absolute right-3 top-14 flex max-w-[40vw] flex-col items-end gap-2 md:top-16 md:max-w-none">
-          <BrandLogo theme={theme} />
-        </div>
-
-        <TimerDisplay timer={match.timer} timerRunning={match.timerRunning} timerColor={timerColor} t={t}
-          onChangeTimer={(s) => setMatch((p) => ({ ...p, timer: s, timerRunning: false }))} />
-
-        <div className="scoreboard-controls flex flex-wrap justify-center gap-3 px-16">
-          <button onClick={startTimer} disabled={match.timerRunning || match.timer === 0}
-            className="px-6 py-2 rounded-lg bg-green-700 hover:bg-green-600 active:bg-green-500 text-white disabled:opacity-30 disabled:cursor-not-allowed font-semibold transition-colors text-sm">
-            START
-          </button>
-          <button onClick={pauseTimer} disabled={!match.timerRunning}
-            className="px-6 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-400 text-white disabled:opacity-30 disabled:cursor-not-allowed font-semibold transition-colors text-sm">
-            PAUSE
-          </button>
-          <button onClick={resetMatch}
-            className={`px-6 py-2 rounded-lg border font-semibold transition-colors text-sm ${t.btnBase}`}>
-            RESET
-          </button>
-        </div>
-
-        <div className="scoreboard-meta flex items-center gap-2">
-          <EditableText value={match.category} onChange={(v) => setMatch((p) => ({ ...p, category: v }))}
-            className={`text-[10px] tracking-widest uppercase w-44 ${t.muted}`} placeholder="Category" t={t} />
-          <span className={`text-xs ${t.muted}`}>·</span>
-          <EditableText value={match.round} onChange={(v) => setMatch((p) => ({ ...p, round: v }))}
-            className={`text-[10px] tracking-widest uppercase w-24 ${t.muted}`} placeholder="Round" t={t} />
-          <span className={`text-xs ${t.muted}`}>·</span>
-          <EditableText value={match.mat} onChange={(v) => setMatch((p) => ({ ...p, mat: v }))}
-            className={`text-[10px] tracking-widest uppercase w-16 ${t.muted}`} placeholder="Mat" t={t} />
-        </div>
-      </div>
-
-      {/* Athletes */}
-      <div className="scoreboard-athletes relative flex flex-1 gap-3 p-3 min-h-0">
-
-        <CenterShield theme={theme} />
-
-        {/* Athlete A */}
-        <div className="flex-1 flex flex-col gap-2 min-h-0">
-          <div className="scoreboard-athlete-head text-center shrink-0">
-            <EditableText value={match.athleteA.name} onChange={(v) => updateAthlete("athleteA", { name: v })}
-              className="text-2xl font-bold" placeholder="Athlete A" t={t} />
-            <EditableText value={match.athleteA.academy} onChange={(v) => updateAthlete("athleteA", { academy: v })}
-              className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
+          <div className="absolute left-3 top-3 flex w-[24rem] flex-col items-start gap-2">
+            <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
+            <BrandLogo theme={theme} />
           </div>
-          <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.scoreHistory.length > 0} pc={pcA} t={t} />
-          <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
-            <MiniCard label="ADV" value={match.athleteA.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
-              onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
-            <MiniCard label="PEN" value={match.athleteA.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
-              onPlus={() => adjustPen("athleteA", 1)} onMinus={() => adjustPen("athleteA", -1)} />
+
+          {/* Theme + Fullscreen — far right */}
+          <div className="absolute right-3 top-3 flex gap-1">
+            <ThemeButton theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} t={t} />
+            <FullscreenButton t={t} />
+          </div>
+
+          <div className="absolute right-3 top-14 flex w-[16rem] flex-col items-end gap-2">
+            <BrandLogo theme={theme} />
+          </div>
+
+          <TimerDisplay timer={match.timer} timerRunning={match.timerRunning} timerColor={timerColor} t={t}
+            onChangeTimer={(s) => setMatch((p) => ({ ...p, timer: s, timerRunning: false }))} />
+
+          <div className="scoreboard-controls flex flex-wrap justify-center gap-3 px-16">
+            <button onClick={startTimer} disabled={match.timerRunning || match.timer === 0}
+              className="px-6 py-2 rounded-lg bg-green-700 hover:bg-green-600 active:bg-green-500 text-white disabled:opacity-30 disabled:cursor-not-allowed font-semibold transition-colors text-sm">
+              START
+            </button>
+            <button onClick={pauseTimer} disabled={!match.timerRunning}
+              className="px-6 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-400 text-white disabled:opacity-30 disabled:cursor-not-allowed font-semibold transition-colors text-sm">
+              PAUSE
+            </button>
+            <button onClick={resetMatch}
+              className={`px-6 py-2 rounded-lg border font-semibold transition-colors text-sm ${t.btnBase}`}>
+              RESET
+            </button>
+          </div>
+
+          <div className="scoreboard-meta flex items-center gap-2">
+            <EditableText value={match.category} onChange={(v) => setMatch((p) => ({ ...p, category: v }))}
+              className={`text-[10px] tracking-widest uppercase w-44 ${t.muted}`} placeholder="Category" t={t} />
+            <span className={`text-xs ${t.muted}`}>·</span>
+            <EditableText value={match.round} onChange={(v) => setMatch((p) => ({ ...p, round: v }))}
+              className={`text-[10px] tracking-widest uppercase w-24 ${t.muted}`} placeholder="Round" t={t} />
+            <span className={`text-xs ${t.muted}`}>·</span>
+            <EditableText value={match.mat} onChange={(v) => setMatch((p) => ({ ...p, mat: v }))}
+              className={`text-[10px] tracking-widest uppercase w-16 ${t.muted}`} placeholder="Mat" t={t} />
           </div>
         </div>
 
-        <div className={`w-px shrink-0 ${t.divider}`} />
+        {/* Athletes */}
+        <div className="scoreboard-athletes relative flex flex-1 gap-3 p-3 min-h-0">
 
-        {/* Athlete B */}
-        <div className="flex-1 flex flex-col gap-2 min-h-0">
-          <div className="scoreboard-athlete-head text-center shrink-0">
-            <EditableText value={match.athleteB.name} onChange={(v) => updateAthlete("athleteB", { name: v })}
-              className="text-2xl font-bold" placeholder="Athlete B" t={t} />
-            <EditableText value={match.athleteB.academy} onChange={(v) => updateAthlete("athleteB", { academy: v })}
-              className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
+          <CenterShield theme={theme} />
+
+          {/* Athlete A */}
+          <div className="flex-1 flex flex-col gap-2 min-h-0">
+            <div className="scoreboard-athlete-head text-center shrink-0">
+              <EditableText value={match.athleteA.name} onChange={(v) => updateAthlete("athleteA", { name: v })}
+                className="text-2xl font-bold" placeholder="Athlete A" t={t} />
+              <EditableText value={match.athleteA.academy} onChange={(v) => updateAthlete("athleteA", { academy: v })}
+                className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
+            </div>
+            <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.scoreHistory.length > 0} pc={pcA} t={t} />
+            <div className="scoreboard-minis flex items-center justify-center gap-20 shrink-0 py-1">
+              <MiniCard label="ADV" value={match.athleteA.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
+                onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
+              <MiniCard label="PEN" value={match.athleteA.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
+                onPlus={() => adjustPen("athleteA", 1)} onMinus={() => adjustPen("athleteA", -1)} />
+            </div>
           </div>
-          <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.scoreHistory.length > 0} pc={pcB} t={t} />
-          <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
-            <MiniCard label="ADV" value={match.athleteB.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
-              onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
-            <MiniCard label="PEN" value={match.athleteB.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
-              onPlus={() => adjustPen("athleteB", 1)} onMinus={() => adjustPen("athleteB", -1)} />
+
+          <div className={`w-px shrink-0 ${t.divider}`} />
+
+          {/* Athlete B */}
+          <div className="flex-1 flex flex-col gap-2 min-h-0">
+            <div className="scoreboard-athlete-head text-center shrink-0">
+              <EditableText value={match.athleteB.name} onChange={(v) => updateAthlete("athleteB", { name: v })}
+                className="text-2xl font-bold" placeholder="Athlete B" t={t} />
+              <EditableText value={match.athleteB.academy} onChange={(v) => updateAthlete("athleteB", { academy: v })}
+                className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
+            </div>
+            <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.scoreHistory.length > 0} pc={pcB} t={t} />
+            <div className="scoreboard-minis flex items-center justify-center gap-20 shrink-0 py-1">
+              <MiniCard label="ADV" value={match.athleteB.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
+                onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
+              <MiniCard label="PEN" value={match.athleteB.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
+                onPlus={() => adjustPen("athleteB", 1)} onMinus={() => adjustPen("athleteB", -1)} />
+            </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

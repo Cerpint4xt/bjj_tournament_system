@@ -15,6 +15,28 @@ body {
   color: #ffffff;
 }
 
+.scoreboard-frame {
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scoreboard-stage-shell {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.scoreboard-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: top left;
+  will-change: transform;
+}
+
 @media (orientation: landscape) and (max-height: 540px) {
   .scoreboard-topbar {
     gap: 0.5rem;
