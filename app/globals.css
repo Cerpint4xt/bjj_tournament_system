@@ -14,3 +14,67 @@ body {
   background: #0a0a0a;
   color: #ffffff;
 }
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .scoreboard-topbar {
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .scoreboard-timer {
+    font-size: clamp(2.5rem, 9vh, 4.5rem);
+    line-height: 1;
+  }
+
+  .scoreboard-controls button {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .scoreboard-meta {
+    gap: 0.35rem;
+  }
+
+  .scoreboard-athletes {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .scoreboard-athlete-head input:first-child {
+    font-size: 1.25rem;
+  }
+
+  .scoreboard-athlete-head input:last-child {
+    font-size: 0.75rem;
+  }
+
+  .scoreboard-score {
+    font-size: clamp(3.75rem, 16vh, 7rem);
+  }
+
+  .scoreboard-minis {
+    gap: 0.5rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .scoreboard-mini {
+    flex: 1 1 0;
+  }
+
+  .scoreboard-mini-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.18em;
+  }
+
+  .scoreboard-mini-card {
+    width: min(100%, 9.5rem);
+    height: 5.75rem;
+  }
+
+  .scoreboard-mini-value {
+    font-size: 3rem;
+    line-height: 1;
+  }
+}

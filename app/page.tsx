@@ -139,11 +139,11 @@ function TimerDisplay({ timer, timerRunning, timerColor, onChangeTimer, t }: {
   if (editing) return (
     <input autoFocus type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
       onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
-      className={`text-8xl font-black tabular-nums tracking-tight bg-transparent text-center outline-none border-b-2 w-72 ${t.timerInput}`} />
+      className={`scoreboard-timer text-8xl font-black tabular-nums tracking-tight bg-transparent text-center outline-none border-b-2 w-72 max-w-[60vw] ${t.timerInput}`} />
   );
   return (
     <div onClick={startEdit} title={timerRunning ? undefined : "Click to edit time"}
-      className={`text-8xl font-black tabular-nums tracking-tight ${timerColor} ${!timerRunning ? "cursor-pointer hover:opacity-70" : "cursor-default"} transition-opacity`}>
+      className={`scoreboard-timer text-8xl font-black tabular-nums tracking-tight ${timerColor} ${!timerRunning ? "cursor-pointer hover:opacity-70" : "cursor-default"} transition-opacity`}>
       {formatTime(timer)}
     </div>
   );
@@ -157,7 +157,7 @@ function ScoreCard({ score, onScore, onUndo, canUndo, pc, t }: {
   score: number; onScore: (pts: number) => void; onUndo: () => void; canUndo: boolean; pc: PaletteColors; t: typeof T.dark;
 }) {
   return (
-    <div className={`relative w-full flex-1 flex flex-col rounded-2xl overflow-hidden border ${t.cardBorder} ${pc.panelBg} min-h-0`}>
+    <div className={`scoreboard-scorecard relative w-full flex-1 flex flex-col rounded-2xl overflow-hidden border ${t.cardBorder} ${pc.panelBg} min-h-0`}>
       {/* Top row — +4 +3 +2 */}
       <div className="flex flex-1">
         {TOP_ZONES.map(({ pts, label }) => (
@@ -181,7 +181,7 @@ function ScoreCard({ score, onScore, onUndo, canUndo, pc, t }: {
         </button>
       </div>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="text-[9rem] font-black tabular-nums leading-none drop-shadow-lg">{score}</span>
+        <span className="scoreboard-score text-[9rem] font-black tabular-nums leading-none drop-shadow-lg">{score}</span>
       </div>
     </div>
   );
@@ -192,13 +192,13 @@ function MiniCard({ label, value, onPlus, onMinus, t, cardBg, hoverCls, valueCol
   cardBg: string; hoverCls: string; valueColor?: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <span className={`text-2xl font-bold uppercase tracking-widest ${t.labelMuted}`}>{label}</span>
-      <div className={`relative grid grid-cols-2 rounded-xl overflow-hidden border ${t.miniCardBorder} ${cardBg} w-72 h-52`}>
+    <div className="scoreboard-mini flex flex-col items-center gap-1.5 min-w-0">
+      <span className={`scoreboard-mini-label text-2xl font-bold uppercase tracking-widest ${t.labelMuted}`}>{label}</span>
+      <div className={`scoreboard-mini-card relative grid grid-cols-2 rounded-xl overflow-hidden border ${t.miniCardBorder} ${cardBg} w-72 h-52 max-w-full`}>
         <button onClick={onPlus}  className={`${hoverCls} transition-colors`} />
         <button onClick={onMinus} className={`${hoverCls} transition-colors border-l ${t.miniCardLine}`} />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className={`text-8xl font-black tabular-nums ${valueColor ?? ""}`}>{value}</span>
+          <span className={`scoreboard-mini-value text-8xl font-black tabular-nums ${valueColor ?? ""}`}>{value}</span>
         </div>
         <div className={`absolute inset-0 flex items-center justify-between px-5 pointer-events-none ${t.pmHint}`}>
           <span className="text-xl font-bold">+</span>
@@ -332,10 +332,10 @@ export default function Scoreboard() {
 
 
   return (
-    <div className={`h-screen flex flex-col select-none overflow-hidden transition-colors duration-300 ${t.page}`}>
+    <div className={`scoreboard-shell h-screen flex flex-col select-none overflow-hidden transition-colors duration-300 ${t.page}`}>
 
       {/* Top bar */}
-      <div className={`relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
+      <div className={`scoreboard-topbar relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
 
         {/* Palette picker — far left */}
         <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
@@ -349,7 +349,7 @@ export default function Scoreboard() {
         <TimerDisplay timer={match.timer} timerRunning={match.timerRunning} timerColor={timerColor} t={t}
           onChangeTimer={(s) => setMatch((p) => ({ ...p, timer: s, timerRunning: false }))} />
 
-        <div className="flex gap-3">
+        <div className="scoreboard-controls flex flex-wrap justify-center gap-3 px-16">
           <button onClick={startTimer} disabled={match.timerRunning || match.timer === 0}
             className="px-6 py-2 rounded-lg bg-green-700 hover:bg-green-600 active:bg-green-500 text-white disabled:opacity-30 disabled:cursor-not-allowed font-semibold transition-colors text-sm">
             START
@@ -364,7 +364,7 @@ export default function Scoreboard() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="scoreboard-meta flex flex-wrap items-center justify-center gap-2 px-4">
           <EditableText value={match.category} onChange={(v) => setMatch((p) => ({ ...p, category: v }))}
             className={`text-[10px] tracking-widest uppercase w-44 ${t.muted}`} placeholder="Category" t={t} />
           <span className={`text-xs ${t.muted}`}>·</span>
@@ -377,18 +377,18 @@ export default function Scoreboard() {
       </div>
 
       {/* Athletes */}
-      <div className="flex flex-1 gap-3 p-3 min-h-0">
+      <div className="scoreboard-athletes flex flex-1 gap-3 p-3 min-h-0">
 
         {/* Athlete A */}
         <div className="flex-1 flex flex-col gap-2 min-h-0">
-          <div className="text-center shrink-0">
+          <div className="scoreboard-athlete-head text-center shrink-0">
             <EditableText value={match.athleteA.name} onChange={(v) => updateAthlete("athleteA", { name: v })}
               className="text-2xl font-bold" placeholder="Athlete A" t={t} />
             <EditableText value={match.athleteA.academy} onChange={(v) => updateAthlete("athleteA", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
           <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.lastDelta !== null} pc={pcA} t={t} />
-          <div className="flex items-center justify-center gap-20 shrink-0 py-1">
+          <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
             <MiniCard label="ADV" value={match.athleteA.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
             <MiniCard label="PEN" value={match.athleteA.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
@@ -400,14 +400,14 @@ export default function Scoreboard() {
 
         {/* Athlete B */}
         <div className="flex-1 flex flex-col gap-2 min-h-0">
-          <div className="text-center shrink-0">
+          <div className="scoreboard-athlete-head text-center shrink-0">
             <EditableText value={match.athleteB.name} onChange={(v) => updateAthlete("athleteB", { name: v })}
               className="text-2xl font-bold" placeholder="Athlete B" t={t} />
             <EditableText value={match.athleteB.academy} onChange={(v) => updateAthlete("athleteB", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
           <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.lastDelta !== null} pc={pcB} t={t} />
-          <div className="flex items-center justify-center gap-20 shrink-0 py-1">
+          <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
             <MiniCard label="ADV" value={match.athleteB.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
             <MiniCard label="PEN" value={match.athleteB.pen} cardBg={penBg} hoverCls={penHover} valueColor="text-red-500" t={t}
