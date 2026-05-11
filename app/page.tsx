@@ -301,13 +301,13 @@ function BrandLogo({ theme }: { theme: Theme }) {
 
 function CenterShield({ theme }: { theme: Theme }) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+    <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-[50.5%] -translate-y-[10%]">
       <Image
         src="/img/Red_Shield.png"
         alt="Tournament shield"
-        width={220}
-        height={220}
-        className={`h-24 w-auto opacity-20 md:h-32 ${theme === "light" ? "opacity-15" : "opacity-20"}`}
+        width={320}
+        height={320}
+        className={`h-[8.75rem] w-auto md:h-[12.5rem] ${theme === "light" ? "opacity-18" : "opacity-22"}`}
       />
     </div>
   );
