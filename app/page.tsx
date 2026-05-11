@@ -89,7 +89,7 @@ const T = {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-interface Athlete { name: string; academy: string; score: number; adv: number; pen: number; lastDelta: number | null; }
+interface Athlete { name: string; academy: string; score: number; adv: number; pen: number; scoreHistory: number[]; }
 interface MatchState {
   athleteA: Athlete; athleteB: Athlete;
   timer: number; timerRunning: boolean;
@@ -98,15 +98,57 @@ interface MatchState {
 
 const DEFAULT_DURATION = 5 * 60;
 const DEFAULT_STATE: MatchState = {
-  athleteA: { name: "Athlete A", academy: "Academy", score: 0, adv: 0, pen: 0, lastDelta: null },
-  athleteB: { name: "Athlete B", academy: "Academy", score: 0, adv: 0, pen: 0, lastDelta: null },
+  athleteA: { name: "Athlete A", academy: "Academy", score: 0, adv: 0, pen: 0, scoreHistory: [] },
+  athleteB: { name: "Athlete B", academy: "Academy", score: 0, adv: 0, pen: 0, scoreHistory: [] },
   timer: DEFAULT_DURATION, timerRunning: false,
   category: "Adult Black Belt Light", round: "Semifinal", mat: "Mat 1",
 };
 
+type PersistedAthlete = Omit<Athlete, "scoreHistory"> & { scoreHistory?: number[]; lastDelta?: number | null };
+type PersistedMatchState = Omit<MatchState, "athleteA" | "athleteB"> & {
+  athleteA?: PersistedAthlete;
+  athleteB?: PersistedAthlete;
+};
+
+function normalizeAthlete(athlete: PersistedAthlete | undefined, fallback: Athlete): Athlete {
+  if (!athlete) return fallback;
+
+  const scoreHistory = Array.isArray(athlete.scoreHistory)
+    ? athlete.scoreHistory.filter((delta) => typeof delta === "number" && Number.isFinite(delta) && delta !== 0)
+    : typeof athlete.lastDelta === "number" && Number.isFinite(athlete.lastDelta) && athlete.lastDelta !== 0
+      ? [athlete.lastDelta]
+      : [];
+
+  return {
+    name: typeof athlete.name === "string" ? athlete.name : fallback.name,
+    academy: typeof athlete.academy === "string" ? athlete.academy : fallback.academy,
+    score: typeof athlete.score === "number" && Number.isFinite(athlete.score) ? athlete.score : fallback.score,
+    adv: typeof athlete.adv === "number" && Number.isFinite(athlete.adv) ? athlete.adv : fallback.adv,
+    pen: typeof athlete.pen === "number" && Number.isFinite(athlete.pen) ? athlete.pen : fallback.pen,
+    scoreHistory,
+  };
+}
+
+function normalizeMatchState(state: PersistedMatchState | null | undefined): MatchState {
+  if (!state) return DEFAULT_STATE;
+
+  return {
+    athleteA: normalizeAthlete(state.athleteA, DEFAULT_STATE.athleteA),
+    athleteB: normalizeAthlete(state.athleteB, DEFAULT_STATE.athleteB),
+    timer: typeof state.timer === "number" && Number.isFinite(state.timer) ? state.timer : DEFAULT_STATE.timer,
+    timerRunning: typeof state.timerRunning === "boolean" ? state.timerRunning : DEFAULT_STATE.timerRunning,
+    category: typeof state.category === "string" ? state.category : DEFAULT_STATE.category,
+    round: typeof state.round === "string" ? state.round : DEFAULT_STATE.round,
+    mat: typeof state.mat === "string" ? state.mat : DEFAULT_STATE.mat,
+  };
+}
+
 function loadState(): MatchState {
   if (typeof window === "undefined") return DEFAULT_STATE;
-  try { const r = localStorage.getItem("bjj:current_match"); return r ? JSON.parse(r) : DEFAULT_STATE; }
+  try {
+    const r = localStorage.getItem("bjj:current_match");
+    return r ? normalizeMatchState(JSON.parse(r) as PersistedMatchState) : DEFAULT_STATE;
+  }
   catch { return DEFAULT_STATE; }
 }
 function saveState(s: MatchState) { localStorage.setItem("bjj:current_match", JSON.stringify(s)); }
@@ -294,14 +336,22 @@ export default function Scoreboard() {
     setMatch((p) => {
       const newScore = Math.max(0, p[side].score + pts);
       const applied = newScore - p[side].score;
-      return { ...p, [side]: { ...p[side], score: newScore, lastDelta: applied !== 0 ? applied : p[side].lastDelta } };
+      if (applied === 0) return p;
+      return { ...p, [side]: { ...p[side], score: newScore, scoreHistory: [...p[side].scoreHistory, applied] } };
     });
   }
   function undoScore(side: "athleteA" | "athleteB") {
     setMatch((p) => {
-      const delta = p[side].lastDelta;
-      if (delta === null) return p;
-      return { ...p, [side]: { ...p[side], score: Math.max(0, p[side].score - delta), lastDelta: null } };
+      const delta = p[side].scoreHistory.at(-1);
+      if (delta === undefined) return p;
+      return {
+        ...p,
+        [side]: {
+          ...p[side],
+          score: Math.max(0, p[side].score - delta),
+          scoreHistory: p[side].scoreHistory.slice(0, -1),
+        },
+      };
     });
   }
   function adjustAdv(side: "athleteA" | "athleteB", delta: number) {
@@ -318,8 +368,8 @@ export default function Scoreboard() {
   function resetMatch() {
     setMatch((p) => ({
       ...p,
-      athleteA: { ...p.athleteA, score: 0, adv: 0, pen: 0 },
-      athleteB: { ...p.athleteB, score: 0, adv: 0, pen: 0 },
+      athleteA: { ...p.athleteA, score: 0, adv: 0, pen: 0, scoreHistory: [] },
+      athleteB: { ...p.athleteB, score: 0, adv: 0, pen: 0, scoreHistory: [] },
       timer: DEFAULT_DURATION, timerRunning: false,
     }));
   }
@@ -387,7 +437,7 @@ export default function Scoreboard() {
             <EditableText value={match.athleteA.academy} onChange={(v) => updateAthlete("athleteA", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
-          <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.lastDelta !== null} pc={pcA} t={t} />
+          <ScoreCard score={match.athleteA.score} onScore={(pts) => addScore("athleteA", pts)} onUndo={() => undoScore("athleteA")} canUndo={match.athleteA.scoreHistory.length > 0} pc={pcA} t={t} />
           <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
             <MiniCard label="ADV" value={match.athleteA.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteA", 1)} onMinus={() => adjustAdv("athleteA", -1)} />
@@ -406,7 +456,7 @@ export default function Scoreboard() {
             <EditableText value={match.athleteB.academy} onChange={(v) => updateAthlete("athleteB", { academy: v })}
               className={`text-sm mt-0.5 ${t.muted}`} placeholder="Academy" t={t} />
           </div>
-          <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.lastDelta !== null} pc={pcB} t={t} />
+          <ScoreCard score={match.athleteB.score} onScore={(pts) => addScore("athleteB", pts)} onUndo={() => undoScore("athleteB")} canUndo={match.athleteB.scoreHistory.length > 0} pc={pcB} t={t} />
           <div className="scoreboard-minis flex items-center justify-center gap-6 lg:gap-20 shrink-0 py-1">
             <MiniCard label="ADV" value={match.athleteB.adv} cardBg={advBg} hoverCls={advHover} valueColor="text-green-400" t={t}
               onPlus={() => adjustAdv("athleteB", 1)} onMinus={() => adjustAdv("athleteB", -1)} />
