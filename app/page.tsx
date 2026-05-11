@@ -282,18 +282,18 @@ function ThemeButton({ theme, onToggle, t }: { theme: Theme; onToggle: () => voi
 }
 
 function BrandLogo({ theme }: { theme: Theme }) {
-  const src = theme === "dark" ? "/img/Linear_White.png" : "/img/Stacked_Black.png";
+  const src = theme === "dark" ? "/img/Stacked_Red.png" : "/img/Stacked_Black.png";
   const alt = "BJJ tournament scoreboard";
 
   return (
-    <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 md:left-4 md:translate-x-0">
+    <div className="pointer-events-none shrink-0">
       <Image
         src={src}
         alt={alt}
         width={152}
         height={48}
         priority
-        className="h-8 w-auto opacity-90 md:h-10"
+        className="h-8 w-auto max-w-[11rem] opacity-90 md:h-9 md:max-w-[15rem]"
       />
     </div>
   );
@@ -318,7 +318,7 @@ function PalettePicker({ selected, onSelect, t }: {
   selected: number; onSelect: (i: number) => void; t: typeof T.dark;
 }) {
   return (
-    <div className="absolute top-3 left-3 flex flex-row gap-2">
+    <div className="flex flex-row flex-wrap gap-2">
       {PALETTES.map((p, i) => (
         <button
           key={i}
@@ -420,15 +420,19 @@ export default function Scoreboard() {
       {/* Top bar */}
       <div className={`scoreboard-topbar relative flex flex-col items-center pt-4 pb-3 gap-3 border-b ${t.border} shrink-0`}>
 
-        <BrandLogo theme={theme} />
-
-        {/* Palette picker — far left */}
-        <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
+        <div className="absolute left-3 top-3 flex max-w-[40vw] flex-col items-start gap-2 md:max-w-none">
+          <PalettePicker selected={paletteIdx} onSelect={setPaletteIdx} t={t} />
+          <BrandLogo theme={theme} />
+        </div>
 
         {/* Theme + Fullscreen — far right */}
-        <div className="absolute top-3 right-3 flex gap-1">
+        <div className="absolute right-3 top-3 flex gap-1">
           <ThemeButton theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} t={t} />
           <FullscreenButton t={t} />
+        </div>
+
+        <div className="absolute right-3 top-14 flex max-w-[40vw] flex-col items-end gap-2 md:top-16 md:max-w-none">
+          <BrandLogo theme={theme} />
         </div>
 
         <TimerDisplay timer={match.timer} timerRunning={match.timerRunning} timerColor={timerColor} t={t}
